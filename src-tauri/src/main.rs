@@ -2,9 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod pyvm;
+use tauri_plugin_store::Builder;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(Builder::default.build()) // tauriStorePlugin 
         .invoke_handler(tauri::generate_handler![
             pyvm::list_installed,
             pyvm::list_available,
