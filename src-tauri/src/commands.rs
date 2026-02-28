@@ -3,6 +3,7 @@
 
 use crate::core::manager::LanguageManager;
 use crate::core::dto::PageResult;
+use crate::utils::config::get_download_path;
 
 #[tauri::command]
 pub async fn list_versions(
@@ -15,12 +16,15 @@ pub async fn list_versions(
     manager.list_versions(page, page_size,key_word).await
 }
 
-#[allow(dead_code)]
 #[tauri::command]
-pub async fn download_version(
+pub async fn install(
+    app: tauri::AppHandle, // 注入 AppHandle 以读取配置
+    window: tauri::Window<tauri::Wry>,
     language: String,
     version: String,
-) -> Result<String, String> {
+) -> Result<(), String> {
+    // 直接从后端配置获取下载目录
+    let download_dir = get_download_path(&app);
     let manager = LanguageManager::new(language)?;
-    manager.download(&version).await
+    manager.install(window, version,download_dir.to_string_lossy().to_string()).await
 }

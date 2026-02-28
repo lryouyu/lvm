@@ -3,6 +3,7 @@
 
 use crate::core::language::{LanguageInstaller, python::PythonInstaller};
 use crate::core::dto::{VersionInfo, PageResult};
+use tauri::{Window, Wry};
 
 pub struct LanguageManager {
     installer: Box<dyn LanguageInstaller + Send + Sync>,
@@ -65,8 +66,20 @@ impl LanguageManager {
         Ok(PageResult { total, list })
     }
 
+
+    pub async fn install(
+        &self,
+        window: Window<Wry>,
+        version: String,
+        save_path: String
+    ) -> Result<(), String> {
+        // 1. 调用具体语言的安装逻辑
+        self.installer.install(window, &version, &save_path).await
+    }
+
+
     #[allow(dead_code)]
-    pub async fn download(&self, version: &str) -> Result<String, String> {
-        self.installer.download(version).await
+    pub async fn get_download_url(&self, version: &str) -> Result<String, String> {
+        self.installer.get_download_url(version)
     }
 }

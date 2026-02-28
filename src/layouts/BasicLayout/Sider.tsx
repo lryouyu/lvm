@@ -34,6 +34,7 @@ export const Sider: React.FC<{ collapsed: boolean; onCollapse: (collapsed: boole
     { label: 'V', key: '/v', icon: <IconFont type="icon-vlang" /> },
     { label: 'Zig', key: '/zig', icon: <IconFont type="icon-zig" /> },
     { label: 'Settings', key: '/settings', icon: <SettingTwoTone /> },
+    { label: 'Downloader', key: '/downloader', icon: <SettingTwoTone /> },
   ];
 
   const handleMenuClick = (e: any) => {

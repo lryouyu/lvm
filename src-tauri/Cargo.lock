@@ -52,6 +52,7 @@ name = "appdemo"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "futures-util",
  "once_cell",
  "regex",
  "reqwest",

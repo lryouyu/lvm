@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use reqwest;
 use std::env;
 use std::path::PathBuf;
-
+use tauri::{Wry};
 use crate::core::utils::semver::sort_versions_desc;
 use crate::core::language::LanguageInstaller;
 
@@ -145,56 +145,52 @@ impl LanguageInstaller for PythonInstaller {
         Ok(None)
     }
 
-    async fn download(&self, version: &str) -> Result<String, String> {
-        // Get platform and architecture information
+    fn get_download_url(&self, version: &str) -> Result<String, String> {
         let platform = self.get_platform();
         let arch = self.get_arch();
 
-        // Construct download URL for Python embed version
-        let download_url = match platform.as_str() {
+        let url = match platform.as_str() {
             "windows" => {
                 let arch_suffix = if arch == "x86_64" { "amd64" } else { "win32" };
-                format!("https://www.python.org/ftp/python/{}/python-{}-embed-{}.zip", 
+                format!("https://www.python.org/ftp/python/{}/python-{}-embed-{}.zip",
                         version, version, arch_suffix)
             },
-            "macos" => {
-                // macOS doesn't have official embed versions, use regular installer
-                format!("https://www.python.org/ftp/python/{}/python-{}-macosx11.0.pkg", 
-                        version, version)
-            },
-            "linux" => {
-                // Linux doesn't have official embed versions, use regular tarball
-                format!("https://www.python.org/ftp/python/{}/Python-{}.tgz", 
-                        version, version)
-            },
-            _ => return Err("Unsupported platform".to_string()),
+            "macos" => format!("https://www.python.org/ftp/python/{}/python-{}-macosx11.0.pkg", version, version),
+            "linux" => format!("https://www.python.org/ftp/python/{}/Python-{}.tgz", version, version),
+            _ => return Err("Unsupported platform".into()),
         };
+        Ok(url)
+    }
 
-        // Create downloads directory if it doesn't exist
-        let downloads_dir = self.get_base_dir()
-            .join("downloads");
-        std::fs::create_dir_all(&downloads_dir)
-            .map_err(|e| e.to_string())?;
+    async fn install(
+        &self,
+        window: tauri::Window<Wry>,
+        version: &str,
+        save_path: &str
+    ) -> Result<(), String> {
+        // 1. 获取 URL
+        let url = self.get_download_url(version)?;
+        println!("url {}", url);
 
-        // Determine filename from URL
-        let filename = download_url.split('/').last().unwrap_or("python.zip");
-        let output_path = downloads_dir.join(filename);
+        // 2. 确定本地路径
+        let dest_path = PathBuf::from(save_path).join(format!("python-{}.zip", version));
 
-        // Download the file
-        let response = reqwest::get(&download_url)
-            .await
-            .map_err(|e| format!("Failed to download: {}", e))?;
+        // 3. 调用通用下载器（流式下载 + 进度回传）
+        crate::core::installers::downloader::Downloader::download_with_progress(
+            window,
+            version,
+            &url,
+            dest_path.clone()
+        ).await?;
 
-        let mut file = std::fs::File::create(&output_path)
-            .map_err(|e| format!("Failed to create file: {}", e))?;
+        // 4. 下载完成后，继续执行解压逻辑...
+        // self.extract(&dest_path, ...).await?;
 
-        let content = response.bytes()
-            .await
-            .map_err(|e| format!("Failed to read response: {}", e))?;
+        Ok(())
+    }
 
-        std::io::Write::write_all(&mut file, &content)
-            .map_err(|e| format!("Failed to write file: {}", e))?;
-
-        Ok(output_path.to_str().unwrap().to_string())
+    // 实现 Trait 要求的异步 download（虽然我们现在主要用通用的，但接口要求实现）
+    async fn download(&self, version: &str) -> Result<String, String> {
+        self.get_download_url(version)
     }
 }
