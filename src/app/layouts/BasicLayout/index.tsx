@@ -22,7 +22,11 @@ export const BasicLayout: React.FC = () => {
       <Layout>
         <Content style={{ padding: 16 }}>
           <Outlet />
-          <FloatButton onClick={() => setVisible(true)} icon={<DownloadOutlined />} />
+          <FloatButton
+            style={{ bottom: 120 }}
+            onClick={() => setVisible(true)}
+            icon={<DownloadOutlined />}
+          />
           <DownloadCenter visible={visible} onClose={() => setVisible(false)} />
         </Content>
       </Layout>
